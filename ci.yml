@@ -1,0 +1,52 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '14'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run unit tests
+      run: npm test
+
+    - name: Build project
+      run: npm run build
+
+    - name: Archive production artifacts
+      if: success()
+      uses: actions/upload-artifact@v2
+      with:
+        name: build
+        path: |
+          build/
+          .env
+
+    - name: Check build output
+      if: success()
+      run: test -e build/main.js
+
+    - name: Fail pipeline if tests fail
+      if: failure()
+      run: exit 1
+
+    - name: Fail pipeline if build artifacts are not present
+      if: always()
+      run: test -e build/main.js || exit 1
